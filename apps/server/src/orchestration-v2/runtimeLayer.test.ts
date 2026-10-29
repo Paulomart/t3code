@@ -1492,7 +1492,7 @@ it.layer(layerTest)("OrchestrationV2LayerLive", (it) => {
       const requestId = RuntimeRequestId.make("runtime-mcp-question-request");
       const requestNodeId = NodeId.make("runtime-mcp-question-node");
       const turnItemId = TurnItemId.make("runtime-mcp-question-item");
-      const record = (commandId: string) =>
+      const record = (commandId: string, itemId = turnItemId) =>
         orchestrator.dispatch({
           type: "user_input_request.record",
           commandId: CommandId.make(commandId),
@@ -1501,7 +1501,7 @@ it.layer(layerTest)("OrchestrationV2LayerLive", (it) => {
           nodeId: run.rootNodeId!,
           requestNodeId,
           requestId,
-          turnItemId,
+          turnItemId: itemId,
           questions: [
             {
               id: "question-1",
@@ -1551,6 +1551,17 @@ it.layer(layerTest)("OrchestrationV2LayerLive", (it) => {
         (yield* outbox.listByCommandId(commandId)).map((effect) => effect.request.type),
         "runtime-request.respond",
       );
+
+      yield* orchestrator.dispatch({
+        type: "thread.stop",
+        commandId: CommandId.make("runtime-mcp-question-stop"),
+        threadId,
+      });
+      const late = yield* record(
+        "runtime-mcp-question-after-stop",
+        TurnItemId.make("runtime-mcp-question-late-item"),
+      ).pipe(Effect.flip);
+      assert.include(String(late.cause), "not active");
     }),
   );
 

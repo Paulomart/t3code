@@ -8351,6 +8351,13 @@ const makeOrchestrator = Effect.fn("orchestrationV2.Orchestrator.layer")(functio
       }
       return yield* emitEvent({ ...base, type: "turn-item.updated", payload: existing });
     }
+    if (!isBlockingRun(run) || (yield* stopReachedRun(command, command.threadId, run.id))) {
+      return yield* new OrchestratorDispatchError({
+        commandId: command.commandId,
+        commandType: command.type,
+        cause: `Run ${command.runId} is not active.`,
+      });
+    }
     yield* emitEvent({
       ...base,
       type: "node.updated",
