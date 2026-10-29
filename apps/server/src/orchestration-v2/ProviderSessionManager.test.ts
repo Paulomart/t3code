@@ -643,6 +643,7 @@ function runBrowserAccessScenario(input: {
   readonly createThread?: boolean;
   readonly projectExists?: boolean;
   readonly delegatedBy?: ThreadId;
+  readonly capabilities?: OrchestrationV2ProviderCapabilities;
 }) {
   return Effect.gen(function* () {
     const state = yield* Ref.make(emptyState);
@@ -691,6 +692,7 @@ function runBrowserAccessScenario(input: {
           state,
           idleTimeoutMs: 1_000,
           mcpConfigs,
+          ...(input.capabilities === undefined ? {} : { capabilities: input.capabilities }),
           projectServiceLayer: layerProjectService,
           serverSettingsLayer: ServerSettings.layerTest({
             enableAgentBrowserAccess: input.enableAgentBrowserAccess,
@@ -3645,6 +3647,25 @@ it.effect(
       });
       assert.isFalse(denied?.capabilities?.has("device"));
     }),
+);
+
+it.effect("ProviderSessionManagerV2 offers MCP questions only without native questions", () =>
+  Effect.gen(function* () {
+    const native = yield* runBrowserAccessScenario({
+      enableAgentBrowserAccess: false,
+      projectOverride: false,
+    });
+    assert.isFalse(native?.capabilities?.has("questions"));
+    const without = yield* runBrowserAccessScenario({
+      enableAgentBrowserAccess: false,
+      projectOverride: false,
+      capabilities: {
+        ...CodexCapabilities,
+        planning: { ...CodexCapabilities.planning, supportsStructuredQuestions: false },
+      },
+    });
+    assert.isTrue(without?.capabilities?.has("questions"));
+  }),
 );
 
 // Device instructions reach delegated children only because their own sessions hold `device`.
