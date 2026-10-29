@@ -113,17 +113,20 @@ describe("environment session state", () => {
     }),
   );
 
-  it.effect("retries a failed permission check while the connection stays up", () =>
+  it.effect("retries a failed permission check with backoff that restarts per connection", () =>
     Effect.gen(function* () {
       const harness = yield* makeHarness((requestNumber) =>
-        requestNumber <= 2 ? unreachable() : Promise.resolve(Response.json(SESSION)),
+        requestNumber <= 3 ? unreachable() : Promise.resolve(Response.json(SESSION)),
       );
       expect((yield* harness.nextSettled())._tag).toBe("Failure");
 
       yield* TestClock.adjust("2 seconds");
       expect((yield* harness.nextSettled())._tag).toBe("Failure");
 
-      yield* TestClock.adjust("4 seconds");
+      yield* SubscriptionRef.set(harness.transport, Option.some(rpcSession()));
+      expect((yield* harness.nextSettled())._tag).toBe("Failure");
+
+      yield* TestClock.adjust("2 seconds");
       expect(yield* harness.nextSettled()).toMatchObject({ _tag: "Success", value: SESSION });
     }),
   );

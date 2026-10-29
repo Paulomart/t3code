@@ -37,7 +37,8 @@ export function SessionPermissions({
     <p className="py-3 text-xs text-muted-foreground">
       {sessionPermissionsUnavailableMessage({
         connected,
-        failed: session.hasError || (!session.isPending && session.data?.authenticated === false),
+        failed: session.hasError,
+        rejected: !session.hasError && !session.isPending && session.data?.authenticated === false,
       })}
     </p>
   );

@@ -14,6 +14,7 @@ import type { PreparedConnection } from "../connection/model.ts";
 import * as EnvironmentSupervisor from "../connection/supervisor.ts";
 import * as ManagedRelay from "../relay/managedRelay.ts";
 import type { RemoteEnvironmentRequestError } from "../rpc/http.ts";
+import type { RpcSession } from "../rpc/session.ts";
 import { safeErrorLogAttributes } from "../errors/safeLog.ts";
 import { executeAuthenticatedEnvironmentHttpRequest } from "./environmentHttpAuth.ts";
 import { followStreamInEnvironment } from "./environmentStreams.ts";
@@ -154,6 +155,7 @@ function makeEnvironmentSessionAtoms<R, E>(
 
   const sessionStateAtom = Atom.family((environmentId: EnvironmentId) => {
     let consecutiveFailures = 0;
+    let backoffConnection: RpcSession | null = null;
     return runtime
       .atom((get) => {
         const prepared = Option.getOrNull(get(preparedConnectionValueAtom(environmentId)));
@@ -164,6 +166,10 @@ function makeEnvironmentSessionAtoms<R, E>(
         );
         if (prepared === null || Option.isNone(connection)) {
           return Effect.never;
+        }
+        if (connection.value !== backoffConnection) {
+          backoffConnection = connection.value;
+          consecutiveFailures = 0;
         }
         return Effect.gen(function* () {
           const signer = yield* Effect.serviceOption(ManagedRelay.ManagedRelayDpopSigner);

@@ -168,9 +168,11 @@ export function EnvironmentRoutesSection({
             <Text className="text-sm text-foreground-muted">
               {sessionPermissionsUnavailableMessage({
                 connected: activeRouteId !== null,
-                failed:
-                  sessionResult._tag === "Failure" ||
-                  (!sessionResult.waiting && session?.authenticated === false),
+                failed: sessionResult._tag === "Failure",
+                rejected:
+                  sessionResult._tag !== "Failure" &&
+                  !sessionResult.waiting &&
+                  session?.authenticated === false,
               })}
             </Text>
           )}
