@@ -162,7 +162,7 @@ export function WorkspaceNativeTabs(props: {
             bottom: 0,
             // UIKit can shrink the sidebar to 280pt independently of its preferred width.
             width:
-              deviceType === "pad"
+              deviceType === "pad" && (floatingTabs || layout.usesSplitView)
                 ? Math.min(280, layout.listPaneWidth ?? width, width)
                 : (layout.listPaneWidth ?? width),
             height: 128,
